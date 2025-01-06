@@ -168,7 +168,9 @@ fun CreateScreen(
                                 unfocusedTrailingIconColor = Black,
                                 focusedTrailingIconColor = Black,
                                 focusedLabelColor = Black,
-                                unfocusedLabelColor = Black
+                                unfocusedLabelColor = Black,
+                                unfocusedTextColor = Black,
+                                focusedTextColor = Black
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -211,7 +213,8 @@ fun CreateScreen(
                      Icon(
                          modifier = Modifier.padding(16.dp, 0.dp),
                          imageVector = ImageVector.vectorResource(id = R.drawable.image_24dp_e8eaed_fill0_wght400_grad0_opsz24),
-                         contentDescription = "Pictures"
+                         contentDescription = "Pictures",
+                         tint = Black
                      )
                      Spacer(Modifier.size(ButtonDefaults.IconSpacing)) // Add spacing after icon
 
@@ -220,6 +223,8 @@ fun CreateScreen(
                         modifier = Modifier
                             .weight(1f)
                             .padding(16.dp, 0.dp) // Add padding to match text fields
+                        ,
+                        color = Black
                     )
                     IconButton(
                         onClick = { viewModel.onClick(navigate, ALBUM_SCREEN) },

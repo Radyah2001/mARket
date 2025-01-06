@@ -2,6 +2,7 @@ package com.example.market
 
 import androidx.compose.runtime.Stable
 import androidx.navigation.NavHostController
+import com.example.market.model.Listing
 
 @Stable
 class MARketAppState(val navController: NavHostController) {

@@ -10,6 +10,9 @@ const val SIGN_UP_SCREEN = "SignUpScreen"
 const val SPLASH_SCREEN = "SplashScreen"
 const val ALBUM_SCREEN = "AlbumScreen"
 const val AR_SCREEN = "ARScreen"
+const val MODEL_VIEWER_SCREEN = "ModelViewerScreen"
+const val LISTINGS_SCREEN = "ListingsScreen"
+const val LISTING_DETAILS_SCREEN = "ListingDetailsScreen"
 
 const val AUTH_PORT = 9099
 const val FIRESTORE_PORT = 8080

@@ -3,6 +3,7 @@ package com.example.market.presentation.view
 
 import android.R.color.black
 import androidx.compose.animation.core.copy
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -43,16 +44,22 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.market.ui.theme.Beige
 import com.example.market.ui.theme.Black
 import com.example.market.ui.theme.MARketTheme
 import com.example.market.ui.theme.Teal
 import com.example.market.R
+import com.example.market.presentation.viewModel.AccountViewModel
+import com.example.market.presentation.viewModel.SignInViewModel
+import com.example.market.ui.theme.PrimaryButton
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreen(
-    openAndPopUp: (String, String) -> Unit
+    navigate: (String) -> Unit,
+    viewModel: AccountViewModel = hiltViewModel()
 ) {
     MARketTheme {
         Scaffold(
@@ -62,10 +69,6 @@ fun AccountScreen(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 24.sp
                     ))
-                    }, actions = {
-                        IconButton(onClick = {  }) {
-                            Icon(Icons.Filled.Close, contentDescription = "Close")
-                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Beige,
@@ -83,6 +86,20 @@ fun AccountScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Spacer(modifier = Modifier.height(32.dp))
+
+                Text(
+                    text = "Welcome",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 24.sp
+                    ),
+                    color = Color.White
+                )
+
+                PrimaryButton(
+                    text = "Sign Out",
+                    onClick = { viewModel.signOut(navigate) }
+                )
 
             }
         }

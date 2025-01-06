@@ -44,19 +44,33 @@ import com.example.market.ACCOUNT_SCREEN
 import com.example.market.AR_SCREEN
 import com.example.market.CATEGORIES_SCREEN
 import com.example.market.CREATE_LISTING_SCREEN
+import com.example.market.LISTINGS_SCREEN
 import com.example.market.presentation.viewModel.HomeViewModel
 import com.example.market.ui.theme.Beige
 import com.example.market.ui.theme.Black
 import com.example.market.ui.theme.MARketTheme
 import com.example.market.ui.theme.Teal
 import com.example.market.R
+import com.example.market.model.Category
+import com.example.market.model.Condition
+import com.example.market.model.Listing
+import com.example.market.presentation.viewModel.ListingSharedViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     navigate: (String) -> Unit,
-    viewModel: HomeViewModel = HomeViewModel()
+    viewModel: HomeViewModel = HomeViewModel(),
+    listingSharedViewModel: ListingSharedViewModel
 ) {
+    val listing = Listing(
+        productName = "Couch",
+        category = Category.COUCHES,
+        price = 199.99,
+        condition = Condition.FAIR,
+        id = 1,
+        image = R.drawable.couch,
+    )
     MARketTheme {
         Scaffold(
             topBar = {
@@ -87,7 +101,10 @@ fun HomeScreen(
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    HomeButton(text = "Browse", onClick = {  }, modifier = Modifier.weight(1f), icon = Icons.Filled.Search)
+                    HomeButton(text = "Browse", onClick = {
+                        listingSharedViewModel.selectCategory(null)
+                        viewModel.onClick(navigate, LISTINGS_SCREEN)
+                }, modifier = Modifier.weight(1f), icon = Icons.Filled.Search)
                     Spacer(modifier = Modifier.width(16.dp))
                     HomeButton(text = "Categories", onClick = { viewModel.onClick(navigate, CATEGORIES_SCREEN) }, modifier = Modifier.weight(1f), icon = Icons.Filled.Menu)
                 }
@@ -103,9 +120,8 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     HomeButton(text = "Account", onClick = { viewModel.onClick(navigate, ACCOUNT_SCREEN)}, modifier = Modifier.weight(1f), icon = Icons.Filled.Person)
                 }
-                HomeButton(text = "AR", onClick = { viewModel.onClick(navigate, AR_SCREEN) }, modifier = Modifier.weight(1f))
                 Spacer(modifier = Modifier.height(8.dp))
-                RecentlySeenSection(text = "Recently Seen", placeholderImage = R.drawable.chair)
+                RecentlySeenSection(text = "Recently Seen", listing)
 
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -132,26 +148,23 @@ fun HomeButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
                     ButtonDefaults.IconSize))
                 Spacer(Modifier.size(ButtonDefaults.IconSpacing))
             }
-            Text(text, fontSize = 20.sp)
+            Text(text, fontSize = 16.sp)
         }
     }
 }
 
 @Composable
-fun RecentlySeenSection(text: String, placeholderImage: Int) {
+fun RecentlySeenSection(text: String, listing: Listing) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
-            .background(Beige),
+            .background(Beige, shape = RoundedCornerShape(8.dp)),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.height(8.dp))
         Text(text, style = MaterialTheme.typography.headlineSmall, color = Black)
         Spacer(modifier = Modifier.height(8.dp))
-        Image(
-            painter = painterResource(id = placeholderImage),
-            contentDescription = "Placeholder",
-            modifier = Modifier.size(150.dp)
-        )
+        ListingItem(listing) { }
     }
 }

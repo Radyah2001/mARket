@@ -23,6 +23,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -118,12 +119,13 @@ fun CustomTextField(
             focusedContainerColor = Beige,
             unfocusedContainerColor = Beige,
             focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black,
 
             ),
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(text = placeholder) },
-        leadingIcon = { Icon(imageVector = leadingIcon, contentDescription = contentDescription) },
+        placeholder = { Text(text = placeholder, color = Color.Gray) },
+        leadingIcon = { Icon(imageVector = leadingIcon, contentDescription = contentDescription, tint = Black) },
         visualTransformation = visualTransformation
     )
 }
@@ -169,8 +171,8 @@ fun PriceTextField(
             onValueChange(filteredValue)
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        trailingIcon = { Text(currency) }, // Trailing currency text
-        leadingIcon = { Icon(imageVector = leadingIcon, contentDescription = "price")},
+        trailingIcon = { Text(currency, color = Black) }, // Trailing currency text
+        leadingIcon = { Icon(imageVector = leadingIcon, contentDescription = "price", tint = Color.Black)},
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp, 4.dp)
@@ -184,10 +186,11 @@ fun PriceTextField(
             focusedContainerColor = Beige,
             unfocusedContainerColor = Beige,
             focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black,
             cursorColor = Color.Black,
 
         ),
         singleLine = true,
-        placeholder = { Text(text = placeholder) },
+        placeholder = { Text(text = placeholder, color = Color.Gray) },
     )
 }

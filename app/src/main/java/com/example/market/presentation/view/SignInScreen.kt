@@ -39,6 +39,7 @@ import com.example.market.ui.theme.Teal
 @Composable
 fun SignInScreen(
     openAndPopUp: (String, String) -> Unit,
+    navigate: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SignInViewModel = hiltViewModel()
 ) {
@@ -112,7 +113,7 @@ fun SignInScreen(
                         containerColor = Color.Transparent
 
                     ),
-                    onClick = { viewModel.onSignUpClick(openAndPopUp) }) {
+                    onClick = { viewModel.onSignUpClick(navigate) }) {
                     Text(text = stringResource(R.string.sign_up_description), fontSize = 16.sp)
                 }
 
@@ -127,6 +128,6 @@ fun SignInScreen(
 @Composable
 fun AuthSignInPreview() {
     MARketTheme {
-        SignInScreen({ _, _ -> })
+        SignInScreen({ _, _ -> }, { _ -> })
     }
 }

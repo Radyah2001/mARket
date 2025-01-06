@@ -1,6 +1,7 @@
 package com.example.market.presentation.viewModel
 
 import com.example.market.HOME_SCREEN
+import com.example.market.SIGN_IN_SCREEN
 import com.example.market.SIGN_UP_SCREEN
 import com.example.market.model.service.AccountService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,7 +35,7 @@ class SignUpViewModel @Inject constructor(
             }
 
             accountService.signUp(email.value, password.value)
-            openAndPopUp(HOME_SCREEN, SIGN_UP_SCREEN)
+            openAndPopUp(HOME_SCREEN, SIGN_IN_SCREEN)
         }
     }
 }

@@ -20,7 +20,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.market.presentation.viewModel.HomeViewModel
 import com.google.android.filament.Engine
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
@@ -38,7 +37,6 @@ import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
 import io.github.sceneview.node.CubeNode
 import io.github.sceneview.node.ModelNode
-import io.github.sceneview.rememberCameraNode
 import io.github.sceneview.rememberCollisionSystem
 import io.github.sceneview.rememberEngine
 import io.github.sceneview.rememberMaterialLoader
@@ -47,17 +45,18 @@ import io.github.sceneview.rememberNodes
 import io.github.sceneview.rememberOnGestureListener
 import io.github.sceneview.rememberView
 import com.example.market.R
+import com.example.market.presentation.viewModel.ListingSharedViewModel
 
 private const val kModelFile = "models/old_couch.glb"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ARScreen() {
-    ARView()
+fun ARScreen(listingSharedViewModel: ListingSharedViewModel) {
+    ARView(listingSharedViewModel.selectedListing.value?.modelPath ?: kModelFile)
 }
 
 @Composable
-fun ARView() {
+fun ARView(modelPath: String) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -106,7 +105,8 @@ fun ARView() {
                                 engine = engine,
                                 modelLoader = modelLoader,
                                 materialLoader = materialLoader,
-                                anchor = anchor
+                                anchor = anchor,
+                                modelPath = modelPath
                             )
                         }
                 }
@@ -127,7 +127,8 @@ fun ARView() {
                                     engine = engine,
                                     modelLoader = modelLoader,
                                     materialLoader = materialLoader,
-                                    anchor = anchor
+                                    anchor = anchor,
+                                    modelPath = modelPath
                                 )
                             }
                     }
@@ -158,11 +159,12 @@ fun createAnchorNode(
     engine: Engine,
     modelLoader: ModelLoader,
     materialLoader: MaterialLoader,
-    anchor: Anchor
+    anchor: Anchor,
+    modelPath: String
 ): AnchorNode {
     val anchorNode = AnchorNode(engine = engine, anchor = anchor)
     val modelNode = ModelNode(
-        modelInstance = modelLoader.createModelInstance(kModelFile),
+        modelInstance = modelLoader.createModelInstance(modelPath),
         // Scale to fit in a 0.5 meters cube
         scaleToUnits = 0.5f
     ).apply {

@@ -30,7 +30,7 @@ class SignInViewModel @Inject constructor(
         }
     }
 
-    fun onSignUpClick(openAndPopUp: (String, String) -> Unit) {
-        openAndPopUp(SIGN_UP_SCREEN, SIGN_IN_SCREEN)
+    fun onSignUpClick(navigate: (String) -> Unit) {
+        navigate(SIGN_UP_SCREEN)
     }
 }
