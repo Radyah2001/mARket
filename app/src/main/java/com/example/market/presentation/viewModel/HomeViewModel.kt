@@ -1,8 +1,8 @@
 package com.example.market.presentation.viewModel
 
-import com.example.market.CATEGORIES_SCREEN
+import androidx.lifecycle.ViewModel
 
-class HomeViewModel : mARketAppViewModel() {
+class HomeViewModel : ViewModel() {
     fun onClick(navigate: (String) -> Unit, route: String ) {
         navigate(route)
     }

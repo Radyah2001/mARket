@@ -134,7 +134,9 @@ fun CustomTextField(
 fun PrimaryButton(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    color: Color = DarkOrange,
+    contentColor: Color = Color.White
 ) {
     Button(
         onClick = onClick,
@@ -142,8 +144,8 @@ fun PrimaryButton(
             .fillMaxWidth()
             .padding(16.dp, 0.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = DarkOrange,
-            contentColor = Color.White
+            containerColor = color,
+            contentColor = contentColor
         )
     ) {
         Text(

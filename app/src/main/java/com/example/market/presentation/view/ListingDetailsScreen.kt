@@ -1,5 +1,8 @@
 package com.example.market.presentation.view
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -26,37 +28,66 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import com.example.market.AR_SCREEN
 import com.example.market.MODEL_VIEWER_SCREEN
 import com.example.market.R
-import com.example.market.model.Listing
 import com.example.market.presentation.viewModel.ListingSharedViewModel
+import com.example.market.presentation.viewModel.ModelConversionViewModel
 import com.example.market.ui.theme.Beige
 import com.example.market.ui.theme.Black
 import com.example.market.ui.theme.MARketTheme
 import com.example.market.ui.theme.Orange
+import com.example.market.ui.theme.PrimaryButton
 import com.example.market.ui.theme.Teal
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListingDetailsScreen(
     listingSharedViewModel: ListingSharedViewModel,
+    modelConversionViewModel: ModelConversionViewModel,
     navigate: (String) -> Unit
 ) {
+    // State variable to hold the temporary STL file path after conversion.
+    var tempSTLFilePath by remember { mutableStateOf<String?>(null) }
+    var conversionMessage by remember { mutableStateOf("") }
+    var conversionInProgress by remember { mutableStateOf(false) }
+
+
     val listing = listingSharedViewModel.selectedListing.collectAsState().value
     listing ?: return
+    val context = LocalContext.current
+
+    // Launcher for the Create Document contract.
+    // When the user selects a destination, saveConvertedFile() is called.
+    val createDocumentLauncher = rememberLauncherForActivityResult(contract = CreateDocument("model/stl")) { uri ->
+        if (uri != null && tempSTLFilePath != null) {
+            modelConversionViewModel.saveConvertedFile(context, uri, tempSTLFilePath!!)
+            Toast.makeText(context, "File saved at: $uri", Toast.LENGTH_LONG).show()
+            // Optionally reset state
+            tempSTLFilePath = null
+            conversionMessage = "File successfully saved!"
+            conversionInProgress = false
+        } else {
+            Toast.makeText(context, "File save cancelled or conversion not completed.", Toast.LENGTH_LONG).show()
+            conversionInProgress = false
+        }
+    }
+
     MARketTheme {
         Scaffold(
             topBar = {
@@ -105,7 +136,7 @@ fun ListingDetailsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Image(
-                            painter = painterResource(id = listing.image),
+                            painter = rememberAsyncImagePainter(listing.imageUrl),
                             contentDescription = listing.productName,
                             modifier = Modifier
                                 .size(200.dp)
@@ -159,6 +190,40 @@ fun ListingDetailsScreen(
                             fontSize = 16.sp,
                             color = Color.Gray
                         )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Button for converting and immediately prompting save.
+                        PrimaryButton(
+                            onClick = {
+                                conversionInProgress = true
+                                conversionMessage = "Converting..."
+
+                                modelConversionViewModel.convertRemoteGLTFToSTL(
+                                    context = context,
+                                    remoteUrl = listing.modelUrl.toString(), // The remote link
+                                    onSuccess = { tempPath ->
+                                        tempSTLFilePath = tempPath
+                                        conversionMessage = "Conversion successful. Saving file..."
+                                        // Prompt user to save the .stl
+                                        createDocumentLauncher.launch("model_${System.currentTimeMillis()}.stl")
+                                    },
+                                    onError = { errorMsg ->
+                                        conversionMessage = "Conversion failed: $errorMsg"
+                                        conversionInProgress = false
+                                        Toast.makeText(
+                                            context,
+                                            "Conversion failed: $errorMsg",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                )
+                            },
+                            text = if (conversionInProgress) "Exporting..." else "Export file to STL & Save"
+                        )
+
+                        // Optionally show conversion message
+                        Text(text = conversionMessage)
                     }
                 }
             }

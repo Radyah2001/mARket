@@ -1,25 +1,26 @@
 package com.example.market.presentation.viewModel
 
-import android.graphics.Bitmap
+import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import com.example.market.BuildConfig
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.market.BuildConfig
 import com.example.market.data.AlbumViewState
 import com.example.market.data.Intent
+import com.example.market.data.SelectedPicture
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.File
-import android.os.Environment
 import kotlin.coroutines.CoroutineContext
-import androidx.lifecycle.viewmodel.compose.viewModel
+import android.app.DownloadManager
+import android.net.Uri
+import android.os.Environment
 
-class AlbumViewModel(private val coroutineContext: CoroutineContext): mARketAppViewModel() {
+class AlbumViewModel(private val coroutineContext: CoroutineContext): ViewModel() {
     //region View State
     private val _albumViewState: MutableStateFlow<AlbumViewState> = MutableStateFlow(AlbumViewState())
     // exposes the ViewState to the composable view
@@ -52,27 +53,34 @@ class AlbumViewModel(private val coroutineContext: CoroutineContext): mARketAppV
             }
             is Intent.OnFinishPickingImagesWith -> {
                 if (intent.imageUrls.isNotEmpty()) {
-                    // Handle picked images
-                    val newImages = mutableListOf<ImageBitmap>()
+                    val newPictures = mutableListOf<SelectedPicture>()
                     for (eachImageUrl in intent.imageUrls) {
                         val inputStream = intent.compositionContext.contentResolver.openInputStream(eachImageUrl)
                         val bytes = inputStream?.readBytes()
                         inputStream?.close()
 
                         if (bytes != null) {
-                            val bitmapOptions = BitmapFactory.Options()
-                            bitmapOptions.inMutable = true
-                            val bitmap: Bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bitmapOptions)
-                            newImages.add(bitmap.asImageBitmap())
+                            // Convert raw bytes to a Bitmap -> ImageBitmap
+                            val bitmapOptions = BitmapFactory.Options().apply { inMutable = true }
+                            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bitmapOptions)
+                            val imageBitmap = bitmap.asImageBitmap()
+
+                            // Store both the URI and the ImageBitmap
+                            newPictures.add(
+                                SelectedPicture(
+                                    uri = eachImageUrl,
+                                    imageBitmap = imageBitmap
+                                )
+                            )
                         } else {
-                            // error reading the bytes from the image url
-                            println("The image that was picked could not be read from the device at this url: $eachImageUrl")
+                            println("Could not read bytes from $eachImageUrl")
                         }
                     }
 
                     val currentViewState = _albumViewState.value
                     val newCopy = currentViewState.copy(
-                        selectedPictures = (currentViewState.selectedPictures + newImages),
+                        selectedPictures =
+                                currentViewState.selectedPictures + newPictures,
                         tempFileUrl = null
                     )
                     _albumViewState.value = newCopy
@@ -84,9 +92,15 @@ class AlbumViewModel(private val coroutineContext: CoroutineContext): mARketAppV
                 val tempImageUrl = _albumViewState.value.tempFileUrl
                 if (tempImageUrl != null) {
                     val source = ImageDecoder.createSource(intent.compositionContext.contentResolver, tempImageUrl)
+                    val decodedBitmap = ImageDecoder.decodeBitmap(source).asImageBitmap()
 
                     val currentPictures = _albumViewState.value.selectedPictures.toMutableList()
-                    currentPictures.add(ImageDecoder.decodeBitmap(source).asImageBitmap())
+                    currentPictures.add(
+                        SelectedPicture(
+                            uri = tempImageUrl,
+                            imageBitmap = decodedBitmap
+                        )
+                    )
 
                     _albumViewState.value = _albumViewState.value.copy(tempFileUrl = null,
                         selectedPictures = currentPictures)
@@ -96,5 +110,35 @@ class AlbumViewModel(private val coroutineContext: CoroutineContext): mARketAppV
                 _albumViewState.value = _albumViewState.value.copy(tempFileUrl = null)
             }
         }
+    }
+
+    fun toFileList(context: Context): List<File> {
+        val files = mutableListOf<File>()
+        for (selectedPic in _albumViewState.value.selectedPictures) {
+            val inputStream = context.contentResolver.openInputStream(selectedPic.uri)
+            val bytes = inputStream?.readBytes()
+            inputStream?.close()
+
+            if (bytes != null) {
+                // Create a temp file
+                val tempFile = File.createTempFile("recap_upload_", ".jpg", context.cacheDir)
+                tempFile.outputStream().use { it.write(bytes) }
+                files.add(tempFile)
+            }
+        }
+        return files
+    }
+
+    fun startDownload(context: Context, downloadUrl: String, fileName: String) {
+        val request = DownloadManager.Request(Uri.parse(downloadUrl)).apply {
+            setTitle("Downloading 3D Model")
+            setDescription("Downloading result file")
+            // Set the destination for the file in the public Downloads directory
+            setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+            // Show download progress in the system notifications
+            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+        }
+        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        downloadManager.enqueue(request)
     }
 }

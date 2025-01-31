@@ -15,10 +15,12 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.market.R
+import com.example.market.presentation.buttons.AuthenticationButton
 import com.example.market.presentation.viewModel.SignInViewModel
 import com.example.market.ui.theme.CustomTextField
 import com.example.market.ui.theme.Logo
@@ -45,12 +48,11 @@ fun SignInScreen(
 ) {
     val email = viewModel.email.collectAsState()
     val password = viewModel.password.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
     val spacing = 8.dp
     val spacing2 = 24.dp
 
     MARketTheme {
-
-
         Scaffold(
             modifier = modifier
                 .fillMaxSize()
@@ -104,8 +106,19 @@ fun SignInScreen(
                     text = stringResource(R.string.login),
                     onClick = { viewModel.onSignInClick(openAndPopUp) }
                 )
+                Spacer(
+                    modifier = modifier.height(4.dp)
+                )
 
-                Spacer(modifier = Modifier.height(spacing2))
+                Text("-  or  -", color = Color.White, fontSize = 16.sp)
+
+                Spacer(
+                    modifier = modifier.height(4.dp)
+                )
+
+                AuthenticationButton(buttonText = R.string.sign_in_with_google) { credential ->
+                    viewModel.onSignInWithGoogle(credential, openAndPopUp)
+                }
 
                 TextButton(modifier = modifier.align(Alignment.CenterHorizontally),
                     colors = ButtonDefaults.textButtonColors(
@@ -115,6 +128,18 @@ fun SignInScreen(
                     ),
                     onClick = { viewModel.onSignUpClick(navigate) }) {
                     Text(text = stringResource(R.string.sign_up_description), fontSize = 16.sp)
+                }
+
+                errorMessage?.let { error ->
+                    Snackbar(
+                        action = {
+                            TextButton(onClick = { viewModel.clearErrorMessage() }) {
+                                Text("Dismiss")
+                            }
+                        }
+                    ) {
+                        Text(text = error)
+                    }
                 }
 
             }

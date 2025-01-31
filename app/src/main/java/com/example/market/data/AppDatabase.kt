@@ -8,7 +8,7 @@ import com.example.market.model.Listing
 
 @Database(
     entities = [Listing::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(CategoryConverter::class, ConditionConverter::class)

@@ -2,9 +2,6 @@ package com.example.market.presentation.view
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -21,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,7 +53,7 @@ private const val kEnvironmentFile = "environments/sky_2k.hdr"
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModelViewerScreen(listingSharedViewModel: ListingSharedViewModel) {
-    ModelViewer(listingSharedViewModel.selectedListing.value?.modelPath ?: kModelFile)
+    ModelViewer(listingSharedViewModel.selectedListing.value?.modelUrl ?: kModelFile)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +67,8 @@ fun ModelViewer(modelPath: String) {
         val environmentLoader = rememberEnvironmentLoader(engine)
 
         val centerNode = rememberNode(engine)
+        // We'll store our loaded ModelNode (or null if not loaded yet)
+        var modelNode by remember { mutableStateOf<ModelNode?>(null) }
 
         val cameraNode = rememberCameraNode(engine) {
             position = Position(y = -0.5f, z = 2.0f)
@@ -84,6 +84,17 @@ fun ModelViewer(modelPath: String) {
                 animation = tween(durationMillis = 7.seconds.toInt(MILLISECONDS))
             )
         )
+        // **Load** the model as soon as `modelPath` changes or we first enter
+        LaunchedEffect(modelPath) {
+            val model = modelLoader.loadModel(modelPath)  // `suspend` call
+            if (model != null) {
+                // Create a node for the loaded model
+                modelNode = ModelNode(
+                    modelInstance = model.instance,  // get the ModelInstance from Model
+                    scaleToUnits = 0.25f
+                )
+            }
+        }
 
         Scene(
             modifier = Modifier.fillMaxSize(),
@@ -94,15 +105,10 @@ fun ModelViewer(modelPath: String) {
                 orbitHomePosition = cameraNode.worldPosition,
                 targetPosition = centerNode.worldPosition
             ),
-            childNodes = listOf(centerNode,
-                rememberNode {
-                    ModelNode(
-                        modelInstance = modelLoader.createModelInstance(
-                            assetFileLocation = modelPath
-                        ),
-                        scaleToUnits = 0.25f
-                    )
-                }),
+            childNodes = listOfNotNull(
+                centerNode,
+                modelNode
+            ),
             environment = environmentLoader.createHDREnvironment(
                 assetFileLocation = kEnvironmentFile
             )!!,

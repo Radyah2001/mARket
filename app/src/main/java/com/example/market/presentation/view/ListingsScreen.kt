@@ -1,7 +1,6 @@
 package com.example.market.presentation.view
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,12 +22,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -37,9 +34,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -54,33 +54,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
 import com.example.market.LISTING_DETAILS_SCREEN
 import com.example.market.data.AppDatabase
 import com.example.market.data.ListingRepositoryImpl
+import com.example.market.model.Category
+import com.example.market.model.Condition
 import com.example.market.model.Listing
 import com.example.market.presentation.viewModel.ListingSharedViewModel
 import com.example.market.presentation.viewModel.ListingsViewModel
 import com.example.market.presentation.viewModel.ListingsViewModelFactory
 import com.example.market.ui.theme.Beige
 import com.example.market.ui.theme.Black
+import com.example.market.ui.theme.DarkOrange
 import com.example.market.ui.theme.MARketTheme
 import com.example.market.ui.theme.Orange
-import com.example.market.ui.theme.PrimaryButton
 import com.example.market.ui.theme.Teal
 import com.example.market.R
-import com.example.market.model.Category
-import com.example.market.model.Condition
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,6 +98,8 @@ fun ListingsScreen(
     val showFilterOverlay by listingsViewModel.showFilterOverlay.observeAsState()
     val selectedCategory by listingSharedViewModel.selectedCategory.observeAsState()
     val selectedCondition by listingSharedViewModel.selectedCondition.observeAsState()
+    // State for delete confirmation
+    var listingToDelete by remember { mutableStateOf<Listing?>(null) }
     val scrollState = rememberScrollState()
     LaunchedEffect(listingSharedViewModel.selectedCategory) {
         listingsViewModel.filterListings(
@@ -161,14 +163,96 @@ fun ListingsScreen(
                         onFilterClick = { listingsViewModel.toggleFilterOverlay() }
                     )
 
-                    filteredListings.forEach {
-                        ListingItem(
-                            listing = it,
-                            onItemClick = {
-                                listingSharedViewModel.selectListing(it)
-                                navigate(LISTING_DETAILS_SCREEN)
+                    if (filteredListings.isEmpty()) {
+                        Text("No listings found", color = Color.White, fontSize = 18.sp)
+                    } else {
+                        filteredListings.forEach {
+                            ListingItem(
+                                listing = it,
+                                onItemClick = {
+                                    listingSharedViewModel.selectListing(it)
+                                    listingSharedViewModel.addRecentlySeenListing(it)
+                                    navigate(LISTING_DETAILS_SCREEN)
+                                },
+                                onDeleteClick = { listingToDelete = it }
+                            )
+                        }
+                    }
+                    // Show the dialog if listingToDelete is not null
+                    listingToDelete?.let { listing ->
+                        DeleteConfirmDialog(
+                            listing = listing,
+                            onConfirmDelete = {
+                                listingsViewModel.deleteListing(listing) // call your existing method
+                                listingSharedViewModel.removeRecentlySeenListing(listing)
+                                listingToDelete = null // close dialog
+                            },
+                            onDismiss = {
+                                listingToDelete = null // user canceled
                             }
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DeleteConfirmDialog(
+    listing: Listing,
+    onConfirmDelete: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = MaterialTheme.shapes.medium,
+            tonalElevation = 4.dp,
+            color = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier
+                    .background(Beige)
+                    .padding(16.dp)
+                    .width(IntrinsicSize.Max),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Delete ${listing.productName}?",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Black
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Are you sure you want to remove this listing?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Black
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.End,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Beige,
+                            contentColor = Black
+                        )
+                    ) {
+                        Text("Cancel")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = onConfirmDelete,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Red,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("Delete")
                     }
                 }
             }
@@ -198,7 +282,7 @@ fun ListingItem(listing: Listing, onItemClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(id = listing.image),
+                painter = rememberAsyncImagePainter(listing.imageUrl),
                 contentDescription = listing.productName,
                 modifier = Modifier
                     .size(80.dp)
@@ -245,6 +329,113 @@ fun ListingItem(listing: Listing, onItemClick: () -> Unit) {
 }
 
 @Composable
+fun ListingItem(
+    listing: Listing,
+    onItemClick: () -> Unit,
+    onDeleteClick: (Listing) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .clickable(onClick = onItemClick),
+        colors = CardDefaults.cardColors(containerColor = Beige),
+        shape = RoundedCornerShape(12.dp),  // Slightly larger corners
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left image with optional overlay or gradient
+            Box(
+                modifier = Modifier
+                    .size(width = 90.dp, height = 90.dp)
+                    .clip(RoundedCornerShape(8.dp))
+            ) {
+                Image(
+                    painter = rememberAsyncImagePainter(listing.imageUrl),
+                    contentDescription = listing.productName,
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(Color.Gray),
+                    contentScale = ContentScale.Crop
+                )
+
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.1f))
+                            )
+                        )
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Middle text section
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp) // space away from delete icon
+            ) {
+                Text(
+                    text = listing.productName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Black,
+                    maxLines = 1
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = listing.category.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+                Spacer(Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "${listing.price.toInt()} kr.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Orange
+                    )
+                    Text(
+                        text = listing.condition.name,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            // Right: Delete Icon
+            // Placed in a Box to separate from text
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(50)) // Circle background
+                    .background(Beige)
+            ) {
+                IconButton(
+                    onClick = { onDeleteClick(listing) },
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(24.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_delete_24),
+                        contentDescription = "Delete listing",
+                        tint = Color.Black
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun SortDialog(
     onSort: (Boolean) -> Unit,
     onDismiss: () -> Unit
@@ -259,6 +450,7 @@ fun SortDialog(
         ) {
             Column(
                 modifier = Modifier
+                    .background(Beige)
                     .padding(horizontal = 24.dp, vertical = 16.dp)
                     .wrapContentSize()
             ) {
@@ -287,7 +479,11 @@ fun SortDialog(
                 Row {
                     RadioButton(
                         selected = ascending,
-                        onClick = { ascending = true }
+                        onClick = { ascending = true },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = Orange,
+                            unselectedColor = Black
+                        )
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Ascending")
@@ -296,7 +492,11 @@ fun SortDialog(
                 Row {
                     RadioButton(
                         selected = !ascending,
-                        onClick = { ascending = false }
+                        onClick = { ascending = false },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = Orange,
+                            unselectedColor = Black
+                        )
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Descending")
@@ -304,11 +504,22 @@ fun SortDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(onClick = onDismiss) {
+                    OutlinedButton(onClick = onDismiss,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Beige,
+                            contentColor = Black
+                        )
+                    ) {
                         Text("Cancel")
                     }
                     Spacer(Modifier.width(8.dp))
-                    Button(onClick = { onSort(ascending); onDismiss() }) {
+                    Button(
+                        onClick = { onSort(ascending); onDismiss() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = DarkOrange,
+                            contentColor = Beige
+                        )
+                    ) {
                         Text("Apply")
                     }
                 }
@@ -345,6 +556,7 @@ fun FilterDialog(
         ) {
             Column(
                 modifier = Modifier
+                    .background(Beige)
                     .padding(16.dp)
                     .width(intrinsicSize = IntrinsicSize.Min) // so it doesn't stretch too wide
                     .verticalScroll(rememberScrollState())
@@ -391,7 +603,13 @@ fun FilterDialog(
 
                 // "Cancel" and "Apply" buttons
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(onClick = onDismiss) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Beige,
+                            contentColor = Black
+                        )
+                    ) {
                         Text("Cancel")
                     }
                     Spacer(Modifier.width(8.dp))
@@ -399,7 +617,11 @@ fun FilterDialog(
                         onClick = {
                             onFilter()   // e.g., triggers filtering logic in your ViewModel
                             onDismiss()  // close dialog
-                        }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = DarkOrange,
+                            contentColor = Beige
+                        )
                     ) {
                         Text("Apply")
                     }
@@ -430,17 +652,21 @@ fun CategoryExposedDropdown(
             value = textFieldValue,
             onValueChange = { /* no direct text editing */ },
             readOnly = true,
-            label = { Text("Category") },
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
             // The critical modifier that anchors the menu:
             modifier = Modifier
                 .menuAnchor()
-                .fillMaxWidth()
+                .fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Orange,
+                unfocusedBorderColor = Black
+            )
         )
 
         ExposedDropdownMenu(
+            modifier = Modifier.background(Beige),
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
@@ -487,17 +713,21 @@ fun ConditionExposedDropdown(
             value = textFieldValue,
             onValueChange = { /* No direct editing */ },
             readOnly = true,
-            label = { Text("Condition") },
             trailingIcon = {
                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
             // Important: menuAnchor() helps position the menu in Compose 1.5+
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor()
+                .menuAnchor(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Orange,
+                unfocusedBorderColor = Black
+            )
         )
 
         ExposedDropdownMenu(
+            modifier = Modifier.background(Beige),
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
@@ -507,7 +737,10 @@ fun ConditionExposedDropdown(
                 onClick = {
                     onConditionSelected(null)
                     expanded = false
-                }
+                },
+                colors = MenuDefaults.itemColors(
+                    textColor = Black
+                )
             )
             // List all conditions
             conditions.forEach { condition ->

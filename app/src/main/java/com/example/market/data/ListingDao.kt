@@ -18,7 +18,7 @@ interface ListingDao {
     suspend fun getListingById(id: Int): Listing?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun addListing(listing: Listing)
+    suspend fun insertListing(listing: Listing): Long
 
     @Update
     suspend fun updateListing(listing: Listing)

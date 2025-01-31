@@ -15,5 +15,10 @@ data class AlbumViewState(
     /**
      * holds the list of images taken by camera or selected pictures from the gallery.
      */
-    val selectedPictures: List<ImageBitmap> = emptyList(),
+    val selectedPictures: List<SelectedPicture> = emptyList(),
+)
+
+data class SelectedPicture(
+    val uri: Uri,
+    val imageBitmap: ImageBitmap
 )

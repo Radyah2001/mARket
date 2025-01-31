@@ -15,7 +15,12 @@ class ListingRepositoryImpl(private val db: AppDatabase) : ListingRepository {
     }
 
     override suspend fun addListing(listing: Listing) {
-        listingDao.addListing(listing)
+        listingDao.insertListing(listing)
+    }
+
+    // Or create a new method to return the new row ID:
+    override suspend fun addListingReturnId(listing: Listing): Long {
+        return listingDao.insertListing(listing)
     }
 
     override suspend fun updateListing(listing: Listing) {

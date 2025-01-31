@@ -10,22 +10,14 @@ data class Listing(
     val category: Category,
     val price: Double,
     val condition: Condition,
-    val image: Int,
-    val modelPath: String? = null
+    val imageUrl: String? = null,
+    val modelUrl: String? = null
 )
 
 enum class Category {
-    CHAIRS,
-    TABLES,
-    BEDS,
-    DESKS,
-    DRESSERS,
-    COUCHES,
-    BOOKCASES
+    CHAIRS, TABLES, BEDS, DESKS, DRESSERS, COUCHES, BOOKCASES
 }
 
 enum class Condition {
-    NEW,
-    USED,
-    FAIR
+    NEW, USED, FAIR
 }
